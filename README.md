@@ -5,6 +5,7 @@ azure vm runner and docker ci
 1. Runner 추가 및 설정 / 서비스 데몬으로 실행
     1.1 [추가 및 설정](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/adding-self-hosted-runners)
     1.2 [서비스 데몬으로 실행](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service)
+    
 2. Self-hosted 러너 사용
 
     ```
@@ -15,6 +16,14 @@ azure vm runner and docker ci
     - _diag 폴더
     - Runner 앱 실행 로그 -> Runner 로 시작
     - Job 실행 로그 -> Worker 로 시작
+
+4. 퍼블릭 저장소에서 Self Host Runner 사용시 보안 위험성
+    - PR 트리거 사용할 경우 외부인이 PR 시 Action Pipe 실행 하게되는 위험 존재
+
+    - https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security
+
+### Docker install to ubuntu
+
 
 ### CI Steps
 1. Checkout Repo

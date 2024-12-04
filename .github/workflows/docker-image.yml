@@ -70,7 +70,9 @@ jobs:
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
     # Test Application
-    - name: Test Application
-      run: |
-          docker run -p 8080:8080 --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} 
-          curl localhost:8080 > curl_result.txt
+    - uses: addnab/docker-run-action@v3
+      with:
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        registry: ${{ env.REGISTRY }}
+        image: ${{ env.IMAGE_NAME }}:${{ github.sha }}
