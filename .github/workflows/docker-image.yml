@@ -65,7 +65,7 @@ jobs:
       uses: docker/build-push-action@v6.9.0
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
@@ -76,3 +76,8 @@ jobs:
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
         registry: ${{ env.REGISTRY }}
         image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    # Test Application
+    - name: 
+      run: | 
+        curl localhost:8080 > test.txt
+        docker stop $(docker ps -aq)
