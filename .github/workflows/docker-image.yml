@@ -75,4 +75,4 @@ jobs:
         username: ${{ secrets.AZURE_CLIENT_ID }}
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
         registry: ${{ env.REGISTRY }}
-        image: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
