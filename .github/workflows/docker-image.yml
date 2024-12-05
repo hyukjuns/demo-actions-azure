@@ -100,6 +100,6 @@ jobs:
     # Test Application
     - name: 
       run: | 
-        docker run -d -p 8080:8080 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --name test
+        docker run -d -p 8080:8080 --name test ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         curl localhost:8080 > test.txt
         docker stop test
