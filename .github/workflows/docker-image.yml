@@ -39,7 +39,8 @@ jobs:
           pip install pytest
           pytest app/test_rest.py | tee app/test-results.txt
     # Upload Blob
-    - uses: Azure/login@v1
+    - name: Azure Login
+      uses: Azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     - name: Azure CLI script
