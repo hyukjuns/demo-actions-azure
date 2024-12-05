@@ -101,5 +101,6 @@ jobs:
     - name: 
       run: | 
         docker run -d -p 8080:8080 --name test ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        sleep 5s
         curl localhost:8080 > test.txt
         docker stop test
