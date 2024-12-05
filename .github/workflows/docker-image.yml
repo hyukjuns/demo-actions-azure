@@ -38,7 +38,26 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
           pytest app/test_rest.py | tee app/test-results.txt
-    
+    # Upload Blob
+    - uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Azure CLI script
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az storage blob upload \
+            --account-name devghactionsac001  \
+            --container-name test \
+            --name test-results.txt \
+            --file app/test-results.txt \
+            --auth-mode login
+    - name: View File
+      run: |
+          ls
+          cat test-results.txt
+
     # Upload Test Reulst as Artifact
     - name: Upload pytest test results
       uses: actions/upload-artifact@v4
