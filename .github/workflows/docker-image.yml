@@ -55,7 +55,7 @@ jobs:
           az storage blob upload \
             --account-name devghactionsac001  \
             --container-name test \
-            --name test-results.txt \
+            --name test-results-${{ github.sha }}.txt \
             --file app/test-results-${{ github.sha }}.txt \
             --auth-mode login
 
