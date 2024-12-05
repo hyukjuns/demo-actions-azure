@@ -31,6 +31,18 @@ jobs:
         auth-type: IDENTITY
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Azure CLI script
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          echo "made by actions" > actionfile.txt
+          az storage blob upload \
+            --account-name devghactionsac001  \
+            --container-name test \
+            --name actionfile.txt \
+            --file actionfile.txt \
+            --auth-mode login
     # # Setup Python version
     # - name: Setup Python
     #   uses: actions/setup-python@v5.2.0
