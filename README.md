@@ -1,6 +1,12 @@
 # demo-actions-azure
 azure vm runner and docker ci
 
+### Todo
+- 노티 / 승인 처리
+- Blob에서 다운로드 받은 자료 앱에서 사용
+- Selfhost에서 python workspace 관리 모범 사례
+- 각종 변수 및 사용처 정리
+
 ### Runner Setting
 1. Runner 추가 및 설정 / 서비스 데몬으로 실행
     1.1 [추가 및 설정](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/adding-self-hosted-runners)
@@ -35,9 +41,7 @@ azure vm runner and docker ci
 7. Download Test Tool From Blob
 8. Test Application (Running Container)
 
-### 기타 추가사항
-- Blob에 업로드할 데이터/파일 (특정한 아웃풋)
-- Blob에서 데이터/파일 다운로드 및 사용하는 방식 (소스코드 or 외부 툴)
-- Selfhost에서 python workspace 관리 모범 사례
-- Slack 알람
-- 승인프로세스
+### 참고사항
+- Storage 접근 Identity: Azure VM System Assigned Identity
+- 사전준비: 러너세팅, azcli, docker engine
+
