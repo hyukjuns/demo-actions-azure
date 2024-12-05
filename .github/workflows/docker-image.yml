@@ -100,4 +100,4 @@ jobs:
     - name: 
       run: | 
         curl localhost:8080 > test.txt
-        docker stop $(docker ps -aq)
+        docker stop $(docker ps -q)
