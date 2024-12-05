@@ -21,9 +21,24 @@ jobs:
     # runs-on: ubuntu-latest
     runs-on: [self-hosted, general-cpu]
     steps:
+
     # Checkout Repo
     - uses: actions/checkout@v4
 
+    # Setup Python version
+    - name: Setup Python
+      uses: actions/setup-python@v5.2.0
+      with:
+        python-version: '3.11.7'
+        cache: 'pip' # caching pip dependencies
+    
+    # Test Python Application
+    - name: Pytest
+      run: |
+          pip install -r requirements.txt
+          pip install pytest
+          pytest app/test_rest.py | tee app/test-results.txt
+    
     # Upload Blob
     - name: Azure login
       uses: azure/login@v2
@@ -31,92 +46,58 @@ jobs:
         auth-type: IDENTITY
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    - name: Azure CLI script
+
+    - name: Azure CLI script - Upload test result file to blob
       uses: azure/cli@v2
       with:
         azcliversion: latest
         inlineScript: |
-          echo "made by actions" > actionfile.txt
           az storage blob upload \
             --account-name devghactionsac001  \
             --container-name test \
-            --name actionfile.txt \
-            --file actionfile.txt \
+            --name test-results.txt \
+            --file app/test-results.txt \
             --auth-mode login
-    # # Setup Python version
-    # - name: Setup Python
-    #   uses: actions/setup-python@v5.2.0
-    #   with:
-    #     python-version: '3.11.7'
-    #     cache: 'pip' # caching pip dependencies
-    
-    # # Test Python Application
-    # - name: Pytest
-    #   run: |
-    #       pip install -r requirements.txt
-    #       pip install pytest
-    #       pytest app/test_rest.py | tee app/test-results.txt
-    
-    # # Upload Blob
-    # - name: Azure login
-    #   uses: azure/login@v2
-    #   with:
-    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
-    # - name: Azure CLI script
-    #   uses: azure/cli@v2
-    #   with:
-    #     azcliversion: latest
-    #     inlineScript: |
-    #       az storage blob upload \
-    #         --account-name devghactionsac001  \
-    #         --container-name test \
-    #         --name test-results.txt \
-    #         --file app/test-results.txt \
-    #         --auth-mode login
-    # - name: View File
-    #   run: |
-    #       ls
-    #       cat test-results.txt
 
-    # # Upload Test Reulst as Artifact
-    # - name: Upload pytest test results
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: pytest-result
-    #     path: app/test-results.txt
-    #   # Use always() to always run this step to publish test results when there are test failures
-    #   if: ${{ always() }}
+    # Upload Test Reulst as Artifact
+    - name: Upload pytest test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-result
+        path: app/test-results.txt
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
 
-    # # Setup Docker
-    # - name: Set up Docker Buildx
-    #   uses: docker/setup-buildx-action@v3
+    # Setup Docker
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
     
-    # # Login to ACR
-    # - name: Docker Login to ACR
-    #   uses: docker/login-action@v3
-    #   with:
-    #     registry: ${{ env.REGISTRY }}
-    #     username: ${{ secrets.AZURE_CLIENT_ID }}
-    #     password: ${{ secrets.AZURE_CLIENT_SECRET }}
+    # Login to ACR
+    - name: Docker Login to ACR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
     
-    # # Build and Push Container Image to Dockerhub
-    # - name: Build and Push Docker image to ACR
-    #   uses: docker/build-push-action@v6.9.0
-    #   with:
-    #     context: .
-    #     platforms: linux/amd64
-    #     push: true
-    #     tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    # Build and Push Container Image to Dockerhub
+    - name: Build and Push Docker image to ACR
+      uses: docker/build-push-action@v6.9.0
+      with:
+        context: .
+        platforms: linux/amd64
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
-    # # Test Application
-    # - uses: addnab/docker-run-action@v3
-    #   with:
-    #     username: ${{ secrets.AZURE_CLIENT_ID }}
-    #     password: ${{ secrets.AZURE_CLIENT_SECRET }}
-    #     registry: ${{ env.REGISTRY }}
-    #     image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-    # # Test Application
-    # - name: 
-    #   run: | 
-    #     curl localhost:8080 > test.txt
-    #     docker stop $(docker ps -aq)
+    # Test Application
+    - uses: addnab/docker-run-action@v3
+      with:
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        registry: ${{ env.REGISTRY }}
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    # Test Application
+    - name: 
+      run: | 
+        curl localhost:8080 > test.txt
+        docker stop $(docker ps -aq)
