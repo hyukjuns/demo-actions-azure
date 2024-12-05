@@ -89,14 +89,6 @@ jobs:
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
-    # # Test Application
-    # - uses: addnab/docker-run-action@v3
-    #   with:
-    #     username: ${{ secrets.AZURE_CLIENT_ID }}
-    #     password: ${{ secrets.AZURE_CLIENT_SECRET }}
-    #     registry: ${{ env.REGISTRY }}
-    #     image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-    
     # Test Application
     - name: 
       run: | 
