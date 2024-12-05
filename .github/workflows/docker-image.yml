@@ -20,7 +20,7 @@ jobs:
   Pytest:
     # runs-on: ubuntu-latest
     runs-on: [self-hosted, general-cpu]
-
+    environment: dev
     steps:
     # Checkout Repo
     - uses: actions/checkout@v4
