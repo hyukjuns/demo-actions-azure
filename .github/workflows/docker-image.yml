@@ -89,15 +89,17 @@ jobs:
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
-    # Test Application
-    - uses: addnab/docker-run-action@v3
-      with:
-        username: ${{ secrets.AZURE_CLIENT_ID }}
-        password: ${{ secrets.AZURE_CLIENT_SECRET }}
-        registry: ${{ env.REGISTRY }}
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    # # Test Application
+    # - uses: addnab/docker-run-action@v3
+    #   with:
+    #     username: ${{ secrets.AZURE_CLIENT_ID }}
+    #     password: ${{ secrets.AZURE_CLIENT_SECRET }}
+    #     registry: ${{ env.REGISTRY }}
+    #     image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
     # Test Application
     - name: 
       run: | 
+        docker run -d -p 8080:8080 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --name test
         curl localhost:8080 > test.txt
-        docker stop $(docker ps -q)
+        docker stop test
