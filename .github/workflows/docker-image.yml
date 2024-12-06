@@ -97,7 +97,7 @@ jobs:
       with:
         azcliversion: latest
         inlineScript: |
-          mkdir dir-${{ github.sha }}
+          mkdir /tmp/dir-${{ github.sha }}
           az storage blob download \
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
