@@ -59,7 +59,8 @@ jobs:
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
             --name test-results-${{ github.sha }}.txt \
             --file app/test-results-${{ github.sha }}.txt \
-            --auth-mode login
+            --auth-mode login \
+            --overwrite
 
     # Upload Test Reulst as Artifact
     - name: Upload pytest test results
