@@ -11,7 +11,7 @@ azure vm runner and docker ci
 1. Runner 추가 및 설정 / 서비스 데몬으로 실행
     1.1 [추가 및 설정](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/adding-self-hosted-runners)
     1.2 [서비스 데몬으로 실행](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service)
-    
+
 2. Self-hosted 러너 사용
 
     ```
@@ -37,9 +37,11 @@ azure vm runner and docker ci
 3. Test Python Application (pytest)
 4. Upload Test Result as Artifact to Blob
 5. docker build and push (push to ACR)
-6. docker run (image from ACR)
-7. Download Test Tool From Blob
-8. Test Application (Running Container)
+6. Download Test Tool From Blob
+7. docker run with volume (with download file) (image from ACR)
+8. Test Application
+9. Approve or Deny
+10. Stop and Remove Container
 
 ### 참고사항
 - Storage 접근 Identity: Azure VM System Assigned Identity
