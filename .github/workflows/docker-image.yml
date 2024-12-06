@@ -109,7 +109,7 @@ jobs:
     - name: 
       run: | 
         docker run -d -p 8080:8080 \
-          --name test \
+          --name ${{ github.sha }} \
           -v "/tmp/dir-${{ github.sha }}":/mnt \
           -e FILEPATH="/mnt/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
