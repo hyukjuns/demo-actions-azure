@@ -102,10 +102,9 @@ jobs:
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
             --name ${{ env.DOWNLOAD_FILENAME }} \
-            --file /tmp/dir-${{ github.sha }}/${{ env.DOWNLOAD_FILENAME }}  \
-            --auth-mode login \
-            --overwrite
-    
+            --file "/tmp/dir-${{ github.sha }}/${{ env.DOWNLOAD_FILENAME }}"  \
+            --auth-mode login 
+
     # 7. docker run with volume (with download file) (image from ACR)
     - name: 
       run: | 
