@@ -38,7 +38,7 @@ jobs:
     - name: Install Requirements and Test Application
       run: |
           pip install -r requirements.txt
-          pytest app/test_rest.py | tee app/test-results-${{ github.sha }}.txt
+          pytest app/test_rest.py | tee ${{ github.workspace }}/test-results-${{ github.sha }}.txt
     
     # 4. Upload Test Result to Blob
     - name: Upload Test Result to Blob - Azure login
@@ -57,7 +57,7 @@ jobs:
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
             --name test-results-${{ github.sha }}.txt \
-            --file app/test-results-${{ github.sha }}.txt \
+            --file ${{ github.workspace }}/test-results-${{ github.sha }}.txt \
             --auth-mode login \
             --overwrite
 
@@ -66,7 +66,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: pytest-result
-        path: app/test-results-${{ github.sha }}.txt
+        path: ${{ github.workspace }}/test-results-${{ github.sha }}.txt
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
 
@@ -119,10 +119,10 @@ jobs:
     - name: Docker run with volume (with download file) (image from ACR)
       run: | 
         sleep 5s
-        max=10;for (( i=1; i <= $max; ++i ));do curl -I localhost:8080/text >> test4.txt; done
+        max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
+  # 9. Approve or Deny / Notify
   exit-continuous-integration-on-cpu:
     runs-on: [self-hosted, general-cpu]
-    # 9. Approve or Deny / Notify
     environment: need-approvals
     steps:
     # 10. Stop and Remove Container
