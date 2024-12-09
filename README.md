@@ -34,11 +34,11 @@ azure vm runner and docker ci
 ### CI Steps
 1. Checkout Repo
 2. Setup Python
-3. Test Python Application (pytest)
-4. Upload Test Result as Artifact to Blob
-5. docker build and push (push to ACR)
+3. Install Requirements and Test Application
+4. Upload Test Result to Blob
+5. Docker build and push (push to ACR)
 6. Download Test Tool From Blob
-7. docker run with volume (with download file) (image from ACR)
+7. Docker run with volume (with download file) (image from ACR)
 8. Test Application
 9. Approve or Deny
 10. Stop and Remove Container

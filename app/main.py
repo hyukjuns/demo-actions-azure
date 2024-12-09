@@ -5,6 +5,7 @@ from fastapi import FastAPI
 # Init App
 app = FastAPI()
 
+# Get Filepath from ENV
 FILEPATH = os.environ.get("FILEPATH")
 
 # Fake DB
@@ -14,6 +15,7 @@ fake_items_db = [
         {"item_name": "Baz"}
     ]
 
+# Read File
 @app.get("/text")
 async def read_text():
     print(FILEPATH)
@@ -21,6 +23,7 @@ async def read_text():
         data = f.read()
         return data
 
+# Get Items
 @app.get("/items/")
 async def read_item(skip: int = 0, limit: int = 10):
     return fake_items_db[skip : skip + limit]
