@@ -10,6 +10,13 @@ on:
   #   paths:
   #     - app/**
   workflow_dispatch:
+    inputs:
+      runner-type:
+        required: true
+        type: choice
+        options:
+        - general-cpu
+        - gpu
 
 env:
   REGISTRY: devghactionacr001.azurecr.io
@@ -23,7 +30,7 @@ env:
 jobs:
 
   continuous-integration-on-cpu:
-    runs-on: [self-hosted, general-cpu]
+    runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     steps:
     # 1. Checkout Repo
     - uses: actions/checkout@v4
