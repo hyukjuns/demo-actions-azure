@@ -18,6 +18,7 @@ env:
   STORAGE_CONTAINER_NAME: test
   DOWNLOAD_FILENAME: test.txt
   BUILDX_CACHE_DIR: /tmp/buildx_cache_dir/
+  CONTAINER_NAME: my-container
 
 jobs:
 
@@ -109,7 +110,7 @@ jobs:
     - name: Docker run with volume (with download file) (image from ACR)
       run: | 
         docker run -d -p 8080:8080 \
-          --name ${{ github.sha }} \
+          --name ${{ env.CONTAINER_NAME }} \
           -v "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -119,11 +120,16 @@ jobs:
       run: | 
         sleep 5s
         max=10;for (( i=1; i <= $max; ++i ));do curl -I localhost:8080/text >> test4.txt; done
+  exit-continuous-integration-on-cpu:
+    runs-on: [self-hosted, general-cpu]
     # 9. Approve or Deny / Notify
-    - uses: hmarr/auto-approve-action@v4
-      with:
-        review-message: "Auto approved automated PR"
+    environment: need-approvals
+    steps:
     # 10. Stop and Remove Container
+    - name: Delete Container
+      run: |
+        docker stop ${{ env.CONTAINER_NAME }}
+        docker rm ${{ env.CONTAINER_NAME }}
 
 
 
