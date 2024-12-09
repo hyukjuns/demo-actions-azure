@@ -108,7 +108,7 @@ jobs:
       run: | 
         docker run -d -p 8080:8080 \
           --name ${{ github.sha }} \
-          -v "/tmp/${{ env.DOWNLOAD_FILENAME }}":/mnt/ \
+          -v "$(pwd)/${{ env.DOWNLOAD_FILENAME }}":/mnt/ \
           -e FILEPATH="/mnt/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         sleep 5s
