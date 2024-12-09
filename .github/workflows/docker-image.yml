@@ -87,7 +87,7 @@ jobs:
       with:
         context: .
         cache-from: type=local,src=/tmp/buildx_cache_dir/
-        cache-to: type=local,src=/tmp/buildx_cache_dir/,mode=max
+        cache-to: type=local,dest=/tmp/buildx_cache_dir/,mode=max
         platforms: linux/amd64
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
