@@ -6,6 +6,7 @@ azure vm runner and docker ci
 - Blob에서 다운로드 받은 자료 앱에서 사용
 - Selfhost에서 python workspace 관리 모범 사례
 - 각종 변수 및 사용처 정리
+- 도커 이미지,캐시 파일 정리 방법
 
 ### Runner Setting
 1. Runner 추가 및 설정 / 서비스 데몬으로 실행

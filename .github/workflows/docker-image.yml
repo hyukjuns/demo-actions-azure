@@ -86,6 +86,8 @@ jobs:
       uses: docker/build-push-action@v6.9.0
       with:
         context: .
+        cache-from: type=local,src=/tmp/buildx_cache_dir/
+        cache-to: type=local,src=/tmp/buildx_cache_dir/,mode=max
         platforms: linux/amd64
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
