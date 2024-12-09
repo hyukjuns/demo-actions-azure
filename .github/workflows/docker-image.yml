@@ -17,6 +17,7 @@ env:
   STORAGE_NAME: devghactionsac001
   STORAGE_CONTAINER_NAME: test
   DOWNLOAD_FILENAME: test.txt
+  BUILDX_CACHE_DIR: /tmp/buildx_cache_dir/
 
 jobs:
 
@@ -31,7 +32,6 @@ jobs:
       uses: actions/setup-python@v5.2.0
       with:
         python-version: '3.11.7'
-        cache: 'pip' # caching pip dependencies
     
     # 3. Install Requirements and Test Application
     - name: Install Requirements and Test Application
@@ -65,7 +65,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: pytest-result
-        path: app/test-results.txt
+        path: app/test-results-${{ github.sha }}.txt
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
 
@@ -81,13 +81,13 @@ jobs:
         username: ${{ secrets.AZURE_CLIENT_ID }}
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
     
-    # 5. Docker build and push (push to ACR)
+    # 5. Docker build and push (push to ACR) / Use Buildx Local Cache
     - name: Docker build and push (push to ACR) - Build and Push Docker image to ACR
       uses: docker/build-push-action@v6.9.0
       with:
         context: .
-        cache-from: type=local,src=/tmp/buildx_cache_dir/
-        cache-to: type=local,dest=/tmp/buildx_cache_dir/,mode=max
+        cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
+        cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
         platforms: linux/amd64
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -102,7 +102,7 @@ jobs:
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
             --name ${{ env.DOWNLOAD_FILENAME }} \
-            --file "./${{ env.DOWNLOAD_FILENAME }}"  \
+            --file "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}"  \
             --auth-mode login
 
     # 7. Docker run with volume (with download file) (image from ACR)
@@ -110,7 +110,7 @@ jobs:
       run: | 
         docker run -d -p 8080:8080 \
           --name ${{ github.sha }} \
-          -v "$(pwd)/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
+          -v "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
@@ -120,7 +120,9 @@ jobs:
         sleep 5s
         max=10;for (( i=1; i <= $max; ++i ));do curl -I localhost:8080/text >> test4.txt; done
     # 9. Approve or Deny / Notify
-
+    - uses: hmarr/auto-approve-action@v4
+      with:
+        review-message: "Auto approved automated PR"
     # 10. Stop and Remove Container
 
 
