@@ -111,11 +111,14 @@ jobs:
           -v "$(pwd)/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        sleep 5s
-        curl localhost:8080/text > test-${{ github.sha }}.txt
     
     # 8. Test Application
-    # 9. Approve or Deny
+    - name: Docker run with volume (with download file) (image from ACR)
+      run: | 
+        sleep 5s
+        max=10;for (( i=1; i <= $max; ++i ));do curl -I localhost:8080/text >> test4.txt; done
+    # 9. Approve or Deny / Notify
+
     # 10. Stop and Remove Container
 
 
