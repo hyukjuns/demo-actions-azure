@@ -124,6 +124,8 @@ jobs:
   exit-continuous-integration-on-cpu:
     runs-on: [self-hosted, general-cpu]
     environment: need-approvals
+    needs: continuous-integration-on-cpu
+    if: success()
     steps:
     # 10. Stop and Remove Container
     - name: Delete Container
