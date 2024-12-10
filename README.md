@@ -19,11 +19,8 @@ azure vm runner and docker ci
 - pipeline에서 self-hosted runner 사용
 
     ```yaml
-        ```
         # 사용자 지정 레이블 세팅
         runs-on: [self-hosted, general-cpu]
-
-        ```
     ```
 - Log 확인
     
