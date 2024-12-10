@@ -67,11 +67,11 @@ azure vm runner and docker ci
 2. Setup Python
 3. Install Requirements and Test Application
 4. Upload Test Result to Blob
-5. Docker build
+5. Docker build (runner에 이미지 저장)
+    - [플러그인](https://github.com/docker/build-push-action/tree/v6.9.0/?tab=readme-ov-file#inputs)
 6. Download Test Tool From Blob
 7. Docker run with volume (with download file) (image from ACR)
 8. Test Application
 9. Approve or Deny
 10. Docker push (push to ACR)
 11. Stop and Remove Container
-
