@@ -89,7 +89,7 @@ jobs:
         username: ${{ secrets.AZURE_CLIENT_ID }}
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
     
-    # 5. Docker build and push (push to ACR) / Use Buildx Local Cache
+    # 5. Docker build and push (push to ACR) / Use Buildx Local Cache / Save Image to local
     - name: Docker build and push (push to ACR) - Build and Push Docker image to ACR
       uses: docker/build-push-action@v6.9.0
       with:
@@ -98,6 +98,7 @@ jobs:
         cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
         platforms: linux/amd64
         push: false
+        outputs: type=docker
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
     # 6. Download Test Tool From Blob
