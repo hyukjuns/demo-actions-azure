@@ -2,7 +2,7 @@
 azure vm runner and docker ci
 
 ### 인프라 구성
-1. VM 및 StorageAccount 생성
+1. VM 및 Storage Account / ACR 생성
 
     - VM System Assigend Identity Enabled > RBAC (블롭 데이터 기여자)
     - StorageAccount > blob container 생성
@@ -16,6 +16,24 @@ azure vm runner and docker ci
 5. [docker 설치](https://docs.docker.com/engine/install/ubuntu/)
 
 > 참고내용
+- docker image 용량 정리
+
+    - [docs](https://docs.docker.com/reference/cli/docker/system/prune/)
+    - docker system prune -a
+
+- docker log lotate
+    - [docs](https://docs.docker.com/engine/logging/drivers/json-file/)
+    - /etc/docker/daemon.json
+        
+        ```json
+        {
+            "log-driver": "json-file",
+            "log-opts": {
+                "max-size": "10m",
+                "max-file": "3"
+            }
+        }
+        ```
 - pipeline에서 self-hosted runner 사용
 
     ```yaml
@@ -37,9 +55,9 @@ azure vm runner and docker ci
         - https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security
 
 ### CI 파이프라인 디자인
-- Input으로 CPU / GPU Runner 선택
+- [Input으로 CPU / GPU 레이블 선택하여 Job 실행할 Runner 선택](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/using-self-hosted-runners-in-a-workflow#using-custom-labels-to-route-jobs)
 - 필요 변수 env로 선언 (ACR 및 File 경로 등)
-- Buildkit의 레이어 캐시 설정
+- [Buildkit의 레이어 캐시 설정 - local cache](https://docs.docker.com/build/ci/github-actions/cache/#local-cache)
 - 이미지 태그는 github commit id
 - azure login은 vm identity로 대체
 - github action envrionments로 승인 프로세스 적용
@@ -49,10 +67,11 @@ azure vm runner and docker ci
 2. Setup Python
 3. Install Requirements and Test Application
 4. Upload Test Result to Blob
-5. Docker build and push (push to ACR)
+5. Docker build
 6. Download Test Tool From Blob
 7. Docker run with volume (with download file) (image from ACR)
 8. Test Application
 9. Approve or Deny
-10. Stop and Remove Container
+10. Docker push (push to ACR)
+11. Stop and Remove Container
 

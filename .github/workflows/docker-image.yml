@@ -97,7 +97,7 @@ jobs:
         cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
         cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
         platforms: linux/amd64
-        push: true
+        push: false
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
     # 6. Download Test Tool From Blob
@@ -127,19 +127,22 @@ jobs:
       run: | 
         sleep 5s
         max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
+  
   # 9. Approve or Deny / Notify
   exit-continuous-integration-on-cpu:
-    runs-on: [self-hosted, general-cpu]
+    runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
     needs: continuous-integration-on-cpu
     if: success()
     steps:
+    
     # 10. Stop and Remove Container
+    - name: Push Image to ACR
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    # 11. Stop and Remove Container
     - name: Delete Container
       run: |
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
-
-
-
-    
