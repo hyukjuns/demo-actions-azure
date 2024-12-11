@@ -32,30 +32,32 @@ jobs:
   continuous-integration-on-cpu:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     steps:
-    # 1. Checkout Repo
-    - uses: actions/checkout@v4
+    # 1. Checkout Repository
+    - name: 1. Checkout Repository
+      uses: actions/checkout@v4
 
-    # 2. Setup Python
-    - name: Setup Python
+    # 2-1. Setup Python
+    - name: 2-1. Setup Python 
       uses: actions/setup-python@v5.2.0
       with:
         python-version: '3.11.7'
     
-    # 3. Install Requirements and Test Application
-    - name: Install Requirements and Test Application
+    # 2-2. Install Requirements Package and Excute PyTest
+    - name: 2-2. Install Requirements and Test Application
       run: |
           pip install -r requirements.txt
           pytest app/test_rest.py | tee ${{ github.workspace }}/test-results-${{ github.sha }}.txt
     
-    # 4. Upload Test Result to Blob
-    - name: Upload Test Result to Blob - Azure login
+    # 3-1. Upload PyTest Result to Blob
+    - name: 3-1. Azure Login
       uses: azure/login@v2
       with:
         auth-type: IDENTITY # VM System Assigned Identity
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
-    - name: Upload Test Result to Blob - Azure CLI script
+
+    # 3-2. Upload PyTest Result to Blob 
+    - name: 3-2. Upload Test Result to Blob (AzureCLI)
       uses: azure/cli@v2
       with:
         azcliversion: latest
@@ -67,42 +69,18 @@ jobs:
             --file ${{ github.workspace }}/test-results-${{ github.sha }}.txt \
             --auth-mode login \
             --overwrite
-
-    # 4. Upload Test Reulst as Artifact to GithubActions
-    - name: Upload pytest test results - to GithubActions
+    
+    # 3-3.Upload PyTest Result to GithubActions
+    - name: 3-3. Upload PyTest Result to GithubActions
       uses: actions/upload-artifact@v4
       with:
         name: pytest-result
         path: ${{ github.workspace }}/test-results-${{ github.sha }}.txt
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
-
-    # 5. Docker build and push (push to ACR) - Setup Docker
-    - name: Docker build and push (push to ACR) - Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
     
-    # 5. Docker build and push (push to ACR) - Login to ACR
-    - name: Docker build and push (push to ACR) - Docker Login to ACR
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.AZURE_CLIENT_ID }}
-        password: ${{ secrets.AZURE_CLIENT_SECRET }}
-    
-    # 5. Docker build and push (push to ACR) / Use Buildx Local Cache / Save Image to local
-    - name: Docker build and push (push to ACR) - Build and Push Docker image to ACR
-      uses: docker/build-push-action@v6.9.0
-      with:
-        context: .
-        cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
-        cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
-        platforms: linux/amd64
-        push: false
-        outputs: type=docker
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-    
-    # 6. Download Test Tool From Blob
-    - name: Download Test Tool From Blob - Azure CLI script
+    # 3-4. Download File From Blob
+    - name: 3-4. Download File From Blob (AzureCLI)
       uses: azure/cli@v2
       with:
         azcliversion: latest
@@ -114,8 +92,25 @@ jobs:
             --file "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}"  \
             --auth-mode login
 
-    # 7. Docker run with volume (with download file) (image from ACR)
-    - name: Docker run with volume (with download file) (image from ACR)
+    # 4-1. Set up Docker Buildx
+    - name: 4-1. Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    # 4-2. Docker build (Save image to local) / Use Buildx Local Cache / Save Image to local
+    - name: 4-2. Docker build (Save image to local)
+      uses: docker/build-push-action@v6.9.0
+      with:
+        context: .
+        cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
+        cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
+        platforms: linux/amd64
+        push: false
+        outputs: type=docker
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
+
+    # 5. Docker Run (bind mount)
+    - name: 5-1. Docker Run (bind mount)
       run: | 
         docker run -d -p 8080:8080 \
           --name ${{ env.CONTAINER_NAME }} \
@@ -123,27 +118,33 @@ jobs:
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
-    # 8. Test Application
-    - name: Docker run with volume (with download file) (image from ACR)
+    # 6. Test Container
+    - name: 6. Docker run with volume (with download file) (image from ACR)
       run: | 
         sleep 5s
         max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
   
-  # 9. Approve or Deny / Notify
+  # 7. Approve or Deny / Notify
   exit-continuous-integration-on-cpu:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
     needs: continuous-integration-on-cpu
     if: success()
     steps:
-    
-    # 10. Stop and Remove Container
-    - name: Push Image to ACR
+    # 8-1. Login to ACR
+    - name: 8-1. Docker Login to ACR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+    # 8-2. Stop and Remove Container
+    - name: 8-2. Push Image to ACR
       run: |
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    # 11. Stop and Remove Container
-    - name: Delete Container
+    # 9. Stop and Remove Container
+    - name: 9. Delete Container
       run: |
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
