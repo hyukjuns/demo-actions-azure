@@ -46,7 +46,7 @@ jobs:
     - name: 2-2. Install Requirements and Test Application
       run: |
           pip install -r requirements.txt
-          pytest app/test_rest.py | tee ${{ github.workspace }}/test-results-${{ github.sha }}.txt
+          pytest app/test_rest.py | tee ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt
     
     # 3-1. Azure Login
     - name: 3-1. Azure Login
@@ -66,7 +66,7 @@ jobs:
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
             --name pytest-results-${{ github.sha }}.txt \
-            --file ${{ github.workspace }}/test-results-${{ github.sha }}.txt \
+            --file ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt \
             --auth-mode login \
             --overwrite
     
@@ -75,7 +75,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: pytest-result
-        path: ${{ github.workspace }}/test-results-${{ github.sha }}.txt
+        path: ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
     
@@ -139,7 +139,7 @@ jobs:
             --overwrite
     
   # 7. Approve or Deny
-  exit-continuous-integrationu:
+  exit-continuous-integration:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
     needs: continuous-integration
