@@ -15,7 +15,14 @@ azure vm runner and docker ci
 
 5. [docker 설치](https://docs.docker.com/engine/install/ubuntu/)
 
-> 참고내용
+### CI 파이프라인 설계 고려사항
+- [Input으로 CPU / GPU 레이블 선택하여 Job 실행할 Runner 선택](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/using-self-hosted-runners-in-a-workflow#using-custom-labels-to-route-jobs)
+- 필요 변수 env로 선언 (ACR 및 File 경로 등)
+- [Buildkit의 레이어 캐시 설정 - local cache](https://docs.docker.com/build/ci/github-actions/cache/#local-cache)
+- [컨테이너 구동시 다운로드 받은 파일 사용 (bind mount)](https://docs.docker.com/engine/storage/bind-mounts/)
+- 이미지 태그는 github commit id
+- azure login은 vm identity로 대체
+- [github action envrionments](https://docs.github.com/ko/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment#creating-an-environment)로 승인 프로세스 적용
 - docker image 용량 정리
 
     - [docs](https://docs.docker.com/reference/cli/docker/system/prune/)
@@ -54,24 +61,23 @@ azure vm runner and docker ci
         - PR 트리거 사용할 경우 외부인이 PR 시 Action Pipe 실행 하게되는 위험 존재
         - https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security
 
-### CI 파이프라인 디자인
-- [Input으로 CPU / GPU 레이블 선택하여 Job 실행할 Runner 선택](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/using-self-hosted-runners-in-a-workflow#using-custom-labels-to-route-jobs)
-- 필요 변수 env로 선언 (ACR 및 File 경로 등)
-- [Buildkit의 레이어 캐시 설정 - local cache](https://docs.docker.com/build/ci/github-actions/cache/#local-cache)
-- 이미지 태그는 github commit id
-- azure login은 vm identity로 대체
-- github action envrionments로 승인 프로세스 적용
 
-### CI Steps
-1. Checkout Repo
-2. Setup Python
-3. Install Requirements and Test Application
-4. Upload Test Result to Blob
-5. Docker build (runner에 이미지 저장)
-    - [플러그인](https://github.com/docker/build-push-action/tree/v6.9.0/?tab=readme-ov-file#inputs)
-6. Download Test Tool From Blob
-7. Docker run with volume (with download file) (image from ACR)
-8. Test Application
-9. Approve or Deny
-10. Docker push (push to ACR)
-11. Stop and Remove Container
+### 파이프라인 순서
+```
+1. Checkout Repository
+2-1. Setup Python
+2-2. Install Requirements Package and Excute PyTest
+3-1. Azure Login
+3-2. Upload PyTest Result to Blob (AzureCLI)
+3-3. Upload PyTest Result to GithubActions
+3-4. Download File From Blob (AzureCLI)
+4-1. Set up Docker Buildx
+4-2. Docker build (Save image to local) / Use Buildx Local Cache / Save Image to local
+5. Docker Run (bind mount)
+6-1. Curl Test (Container)
+6-2. Upload Curl Test Result to Blob (AzureCLI)
+7. Approve or Deny
+8-1. Login to ACR
+8-2. Push Image to ACR
+9. Stop and Remove Container
+```

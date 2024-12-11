@@ -29,7 +29,7 @@ env:
 
 jobs:
 
-  continuous-integration-on-cpu:
+  continuous-integration:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     steps:
     # 1. Checkout Repository
@@ -48,7 +48,7 @@ jobs:
           pip install -r requirements.txt
           pytest app/test_rest.py | tee ${{ github.workspace }}/test-results-${{ github.sha }}.txt
     
-    # 3-1. Upload PyTest Result to Blob
+    # 3-1. Azure Login
     - name: 3-1. Azure Login
       uses: azure/login@v2
       with:
@@ -57,7 +57,7 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     # 3-2. Upload PyTest Result to Blob 
-    - name: 3-2. Upload Test Result to Blob (AzureCLI)
+    - name: 3-2. Upload PyTest Result to Blob (AzureCLI)
       uses: azure/cli@v2
       with:
         azcliversion: latest
@@ -65,12 +65,12 @@ jobs:
           az storage blob upload \
             --account-name ${{ env.STORAGE_NAME }}  \
             --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
-            --name test-results-${{ github.sha }}.txt \
+            --name pytest-results-${{ github.sha }}.txt \
             --file ${{ github.workspace }}/test-results-${{ github.sha }}.txt \
             --auth-mode login \
             --overwrite
     
-    # 3-3.Upload PyTest Result to GithubActions
+    # 3-3. Upload PyTest Result to GithubActions
     - name: 3-3. Upload PyTest Result to GithubActions
       uses: actions/upload-artifact@v4
       with:
@@ -118,17 +118,31 @@ jobs:
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
     
-    # 6. Test Container
-    - name: 6. Docker run with volume (with download file) (image from ACR)
+    # 6-1. Curl Test (Container)
+    - name: 6. Curl Test (Container)
       run: | 
         sleep 5s
         max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
-  
-  # 7. Approve or Deny / Notify
-  exit-continuous-integration-on-cpu:
+    
+    # 6-2. Upload Curl Test Result to Blob 
+    - name: 6-1. Upload Test Result to Blob (AzureCLI)
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az storage blob upload \
+            --account-name ${{ env.STORAGE_NAME }}  \
+            --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --name curl-test-${{ github.sha }}.txt \
+            --file ${{ github.workspace }}/curl-test-${{ github.sha }}.txt \
+            --auth-mode login \
+            --overwrite
+    
+  # 7. Approve or Deny
+  exit-continuous-integrationu:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
-    needs: continuous-integration-on-cpu
+    needs: continuous-integration
     if: success()
     steps:
     # 8-1. Login to ACR
@@ -138,7 +152,7 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ secrets.AZURE_CLIENT_ID }}
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
-    # 8-2. Stop and Remove Container
+    # 8-2. Push Image to ACR
     - name: 8-2. Push Image to ACR
       run: |
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
