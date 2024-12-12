@@ -138,14 +138,22 @@ jobs:
     needs: continuous-integration
     if: success()
     steps:
-    # 1. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
-    - name: 1. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+    # 1. Azure Login
+    - name: 1. Azure Login
+      uses: azure/login@v2
+      with:
+        auth-type: IDENTITY # VM System Assigned Identity
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    # 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+    - name: 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
       run: |
         az acr login --name ${{ env.REGISTRY }}
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    # 2. Stop and Remove Container
-    - name: 2. Delete Container
+    # 3. Stop and Remove Container
+    - name: 3. Delete Container
       run: |
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
@@ -157,18 +165,25 @@ jobs:
       needs: push-image-to-acr
       if: success()
       steps:
-      # 1. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
-      - name: 1. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+      # 1. Azure Login
+      - name: 1. Azure Login
+        uses: azure/login@v2
+        with:
+          auth-type: IDENTITY # VM System Assigned Identity
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # 2. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+      - name: 2. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
         run: |
           az acr login --name ${{ env.REGISTRY }}
           docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
       # 2. Curl Test (Container)
-      - name: 6. Curl Test (Container)
+      - name: 3. Curl Test (Container)
         run: | 
           sleep 5s
           max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-on-gpu-test-${{ github.sha }}.txt; done
-      # 3. Stop and Remove Container
-      - name: 2. Delete Container
+      # 4. Stop and Remove Container
+      - name: 4. Delete Container
         run: |
           docker stop ${{ env.CONTAINER_NAME }}
           docker rm ${{ env.CONTAINER_NAME }}
