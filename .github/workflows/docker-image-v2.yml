@@ -148,6 +148,7 @@ jobs:
     
     # 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
     - name: 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+      if: always()
       run: |
         az acr login --name ${{ env.REGISTRY }}
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
