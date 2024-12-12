@@ -1,0 +1,174 @@
+name: CI-v2
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      runner-type:
+        required: true
+        type: choice
+        options:
+        - general-cpu
+        - gpu
+
+env:
+  REGISTRY: devghactionacr001.azurecr.io
+  IMAGE_NAME: demo-fastapi-webapp
+  STORAGE_NAME: devghactionsac001
+  STORAGE_CONTAINER_NAME: test
+  DOWNLOAD_FILENAME: test.txt
+  BUILDX_CACHE_DIR: /tmp/buildx_cache_dir/
+  CONTAINER_NAME: my-container
+
+jobs:
+
+  continuous-integration:
+    runs-on: [self-hosted, "${{ inputs.runner-type }}"]
+    steps:
+    # 1. Checkout Repository
+    - name: 1. Checkout Repository
+      uses: actions/checkout@v4
+
+    # 2-1. Setup Python
+    - name: 2-1. Setup Python 
+      uses: actions/setup-python@v5.2.0
+      with:
+        python-version: '3.11.7'
+    
+    # 2-2. Install Requirements Package and Excute PyTest
+    - name: 2-2. Install Requirements and Test Application
+      run: |
+          pip install -r requirements.txt
+          pytest app/test_rest.py | tee ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt
+    
+    # 3-1. Azure Login
+    - name: 3-1. Azure Login
+      uses: azure/login@v2
+      with:
+        auth-type: IDENTITY # VM System Assigned Identity
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # 3-2. Upload PyTest Result to Blob 
+    - name: 3-2. Upload PyTest Result to Blob (AzureCLI)
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az storage blob upload \
+            --account-name ${{ env.STORAGE_NAME }}  \
+            --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --name pytest-results-${{ github.sha }}.txt \
+            --file ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt \
+            --auth-mode login \
+            --overwrite
+    
+    # 3-3. Upload PyTest Result to GithubActions
+    - name: 3-3. Upload PyTest Result to GithubActions
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-result
+        path: ${{ github.workspace }}/pytest-results-${{ github.sha }}.txt
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
+    
+    # 3-4. Download File From Blob
+    - name: 3-4. Download File From Blob (AzureCLI)
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az storage blob download \
+            --account-name ${{ env.STORAGE_NAME }}  \
+            --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --name ${{ env.DOWNLOAD_FILENAME }} \
+            --file "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}"  \
+            --auth-mode login
+
+    # 4-1. Set up Docker Buildx
+    - name: 4-1. Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    # 4-2. Docker build (Save image to local) / Use Buildx Local Cache / Save Image to local
+    - name: 4-2. Docker build (Save image to local)
+      uses: docker/build-push-action@v6.9.0
+      with:
+        context: .
+        cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
+        cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }},mode=max
+        platforms: linux/amd64
+        push: false
+        outputs: type=docker
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
+
+    # 5. Docker Run (bind mount)
+    - name: 5-1. Docker Run (bind mount)
+      run: | 
+        docker run -d -p 8080:8080 \
+          --name ${{ env.CONTAINER_NAME }} \
+          -v "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
+          -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
+    # 6-1. Curl Test (Container)
+    - name: 6. Curl Test (Container)
+      run: | 
+        sleep 5s
+        max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
+    
+    # 6-2. Upload Curl Test Result to Blob 
+    - name: 6-1. Upload Test Result to Blob (AzureCLI)
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az storage blob upload \
+            --account-name ${{ env.STORAGE_NAME }}  \
+            --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --name curl-test-${{ github.sha }}.txt \
+            --file ${{ github.workspace }}/curl-test-${{ github.sha }}.txt \
+            --auth-mode login \
+            --overwrite
+    
+  # PUSH ACR
+  push-image-to-acr:
+    runs-on: [self-hosted, "${{ inputs.runner-type }}"]
+    environment: need-approvals
+    needs: continuous-integration
+    if: success()
+    steps:
+    # 1. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+    - name: 1. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+      run: |
+        az acr login --name ${{ env.REGISTRY }}
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    # 2. Stop and Remove Container
+    - name: 2. Delete Container
+      run: |
+        docker stop ${{ env.CONTAINER_NAME }}
+        docker rm ${{ env.CONTAINER_NAME }}
+  
+  # PULL And Run Container on GPU Host
+  run-gpu-continuous-integration:
+      runs-on: [self-hosted, gpu]
+      environment: need-approvals
+      needs: push-image-to-acr
+      if: success()
+      steps:
+      # 1. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+      - name: 1. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+        run: |
+          az acr login --name ${{ env.REGISTRY }}
+          docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      # 2. Curl Test (Container)
+      - name: 6. Curl Test (Container)
+        run: | 
+          sleep 5s
+          max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-on-gpu-test-${{ github.sha }}.txt; done
+      # 3. Stop and Remove Container
+      - name: 2. Delete Container
+        run: |
+          docker stop ${{ env.CONTAINER_NAME }}
+          docker rm ${{ env.CONTAINER_NAME }}
