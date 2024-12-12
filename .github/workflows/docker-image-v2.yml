@@ -22,6 +22,7 @@ env:
 
 jobs:
 
+  # JOB-01
   continuous-integration:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     steps:
@@ -131,7 +132,7 @@ jobs:
             --auth-mode login \
             --overwrite
     
-  # PUSH ACR
+  # JOB-02: PUSH ACR
   push-image-to-acr:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
@@ -159,7 +160,7 @@ jobs:
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
   
-  # PULL And Run Container on GPU Host
+  # JOB-03: PULL And Run Container on GPU Host
   run-gpu-continuous-integration:
       runs-on: [self-hosted, gpu]
       environment: need-approvals
@@ -173,7 +174,7 @@ jobs:
           auth-type: IDENTITY # VM System Assigned Identity
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      # 3-4. Download File From Blob
+      # 2. Download File From Blob
       - name: 2. Download File From Blob (AzureCLI)
         uses: azure/cli@v2
         with:
@@ -185,7 +186,7 @@ jobs:
               --name ${{ env.DOWNLOAD_FILENAME }} \
               --file "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}"  \
               --auth-mode login
-      # 2. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+      # 3. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
       - name: 3. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
         run: |
           az acr login --name ${{ env.REGISTRY }}
@@ -195,13 +196,27 @@ jobs:
           -v "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
           -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-      # 2. Curl Test (Container)
+      # 4. Curl Test (Container)
       - name: 4. Curl Test (Container)
         run: | 
           sleep 5s
           max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-on-gpu-test-${{ github.sha }}.txt; done
-      # 4. Stop and Remove Container
-      - name: 4. Delete Container
+      # 5. Upload Curl Test Result to Blob 
+      - name: 5. Upload Test Result to Blob (AzureCLI)
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob upload \
+              --account-name ${{ env.STORAGE_NAME }}  \
+              --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+              --name curl-on-gpu-test-${{ github.sha }}.txt \
+              --file ${{ github.workspace }}/curl-on-gpu-test-${{ github.sha }}.txt \
+              --auth-mode login \
+              --overwrite
+      # 6. Stop and Remove Container
+      - name: 6. Delete Container
+        if: always()
         run: |
           docker stop ${{ env.CONTAINER_NAME }}
           docker rm ${{ env.CONTAINER_NAME }}
