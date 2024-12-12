@@ -22,7 +22,7 @@ env:
 
 jobs:
 
-  # JOB-01
+  # JOB-01: Applicaion Test, Docker Build and Run (In Local)
   continuous-integration:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     steps:
@@ -104,7 +104,7 @@ jobs:
     
 
     # 5. Docker Run (bind mount)
-    - name: 5-1. Docker Run (bind mount)
+    - name: 5. Docker Run (bind mount)
       run: | 
         docker run -d -p 8080:8080 \
           --name ${{ env.CONTAINER_NAME }} \
@@ -132,7 +132,7 @@ jobs:
             --auth-mode login \
             --overwrite
     
-  # JOB-02: PUSH ACR
+  # JOB-02: PUSH ACR (If Approve)
   push-image-to-acr:
     runs-on: [self-hosted, "${{ inputs.runner-type }}"]
     environment: need-approvals
@@ -160,7 +160,7 @@ jobs:
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
   
-  # JOB-03: PULL And Run Container on GPU Host
+  # JOB-03: PULL And Run Container on GPU Host (If Approve)
   run-gpu-continuous-integration:
       runs-on: [self-hosted, gpu]
       environment: need-approvals

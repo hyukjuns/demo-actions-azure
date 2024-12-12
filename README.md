@@ -66,6 +66,7 @@ azure vm runner and docker ci
 
 ### 파이프라인 순서
 ```
+# JOB-01: Applicaion Test, Docker Build and Run (In Local)
 1. Checkout Repository
 2-1. Setup Python
 2-2. Install Requirements Package and Excute PyTest
@@ -78,8 +79,17 @@ azure vm runner and docker ci
 5. Docker Run (bind mount)
 6-1. Curl Test (Container)
 6-2. Upload Curl Test Result to Blob (AzureCLI)
-7. Approve or Deny
-8-1. Login to ACR
-8-2. Push Image to ACR
-9. Stop and Remove Container
+
+# JOB-02: PUSH ACR (If Approve)
+1. Azure Login
+2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
+3. Delete Container
+
+# JOB-03: PULL And Run Container on GPU Host (If Approve)
+1. Azure Login
+2. Download File From Blob (AzureCLI)
+3. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+4. Curl Test (Container)
+5. Upload Test Result to Blob (AzureCLI)
+6. Delete Container
 ```
