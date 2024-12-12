@@ -148,13 +148,13 @@ jobs:
     
     # 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
     - name: 2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
-      if: always()
       run: |
         az acr login --name ${{ env.REGISTRY }}
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
     # 3. Stop and Remove Container
     - name: 3. Delete Container
+      if: always()
       run: |
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
@@ -173,13 +173,30 @@ jobs:
           auth-type: IDENTITY # VM System Assigned Identity
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # 3-4. Download File From Blob
+      - name: 2. Download File From Blob (AzureCLI)
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob download \
+              --account-name ${{ env.STORAGE_NAME }}  \
+              --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
+              --name ${{ env.DOWNLOAD_FILENAME }} \
+              --file "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}"  \
+              --auth-mode login
       # 2. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
-      - name: 2. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+      - name: 3. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
         run: |
           az acr login --name ${{ env.REGISTRY }}
-          docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker run -d -p 8080:8080 \
+          --name ${{ env.CONTAINER_NAME }} \
+          -v "${{ github.workspace }}/${{ env.DOWNLOAD_FILENAME }}":/home/python/${{ env.DOWNLOAD_FILENAME }} \
+          -e FILEPATH="/home/python/${{ env.DOWNLOAD_FILENAME }}" \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
       # 2. Curl Test (Container)
-      - name: 3. Curl Test (Container)
+      - name: 4. Curl Test (Container)
         run: | 
           sleep 5s
           max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-on-gpu-test-${{ github.sha }}.txt; done
