@@ -216,7 +216,7 @@ jobs:
               --auth-mode login \
               --overwrite
       # 6. Stop and Remove Container, Image
-      - name: 6. Remove Container, Image
+      - name: 6. Stop and Remove Container, Image
         if: always()
         run: |
           docker stop ${{ env.CONTAINER_NAME }}
