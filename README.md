@@ -69,27 +69,27 @@ azure vm runner and docker ci
 # JOB-01: Applicaion Test, Docker Build and Run (In Local)
 1. Checkout Repository
 2-1. Setup Python
-2-2. Install Requirements Package and Excute PyTest
+2-2. Install Requirements Package and PyTest
 3-1. Azure Login
 3-2. Upload PyTest Result to Blob (AzureCLI)
 3-3. Upload PyTest Result to GithubActions
 3-4. Download File From Blob (AzureCLI)
 4-1. Set up Docker Buildx
-4-2. Docker build (Save image to local) / Use Buildx Local Cache / Save Image to local
+4-2. Docker build (Local)
 5. Docker Run (bind mount)
 6-1. Curl Test (Container)
 6-2. Upload Curl Test Result to Blob (AzureCLI)
 
 # JOB-02: PUSH ACR (If Approve)
 1. Azure Login
-2. Login to ACR / Push Image to ACR (ACR Login with VM Identity)
-3. Delete Container
+2. Login to ACR (VM Identity) & Push Image to ACR
+3. Stop and Remove Container, Image
 
-# JOB-03: PULL And Run Container on GPU Host (If Approve)
+# JOB-03: Run on GPU Runner - PULL And Run Container (If Approve)
 1. Azure Login
 2. Download File From Blob (AzureCLI)
-3. Login to ACR / Pull Image from ACR (ACR Login with VM Identity)
+3. Login to ACR & Run Container (Image from ACR)
 4. Curl Test (Container)
 5. Upload Test Result to Blob (AzureCLI)
-6. Delete Container
+6. Stop and Remove Container, Image
 ```
