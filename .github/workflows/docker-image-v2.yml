@@ -211,7 +211,7 @@ jobs:
             az storage blob upload \
               --account-name ${{ env.STORAGE_NAME }}  \
               --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
-              --name curl-on-gpu-test-${{ github.sha }}.txt \
+              --name curl-test-on-gpu-${{ github.sha }}.txt \
               --file ${{ github.workspace }}/curl-test-on-gpu-${{ github.sha }}.txt \
               --auth-mode login \
               --overwrite

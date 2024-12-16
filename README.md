@@ -16,8 +16,9 @@ azure vm runner and docker ci
 5. [docker 설치](https://docs.docker.com/engine/install/ubuntu/)
 
 ### CI 파이프라인 설계 고려사항
-- Identity로 ACR 인증
-- ACR Pull해서 컨테이너 실행
+- VM Identity로 ACR 인증
+    - VM Identity에 ACR Push/Pull 권한 부여
+    - azcli login with identity and az acr login with identity
 - [Input으로 CPU / GPU 레이블 선택하여 Job 실행할 Runner 선택](https://docs.github.com/ko/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/using-self-hosted-runners-in-a-workflow#using-custom-labels-to-route-jobs)
 - 필요 변수 env로 선언 (ACR 및 File 경로 등)
 - [Buildkit의 레이어 캐시 설정 - local cache](https://docs.docker.com/build/ci/github-actions/cache/#local-cache)
