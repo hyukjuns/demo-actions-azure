@@ -116,7 +116,7 @@ jobs:
     - name: 6. Curl Test (Container)
       run: | 
         sleep 5s
-        max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; done
+        max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-${{ github.sha }}.txt; echo >> curl-test-${{ github.sha }}.txt; done
     
     # 6-2. Upload Curl Test Result to Blob 
     - name: 6-1. Upload Test Result to Blob (AzureCLI)
@@ -139,6 +139,9 @@ jobs:
     needs: continuous-integration
     if: success()
     steps:
+    - name: check dir
+      run: |
+        echo "work dir: ${{ github.workspace }}"
     # 1. Azure Login
     - name: 1. Azure Login
       uses: azure/login@v2
@@ -153,12 +156,13 @@ jobs:
         az acr login --name ${{ env.REGISTRY }}
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    # 3. Stop and Remove Container
-    - name: 3. Delete Container
+    # 3. Stop and Remove Container, Image
+    - name: 3. Remove Container, Image
       if: always()
       run: |
         docker stop ${{ env.CONTAINER_NAME }}
         docker rm ${{ env.CONTAINER_NAME }}
+        docker image rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
   
   # JOB-03: PULL And Run Container on GPU Host (If Approve)
   run-gpu-continuous-integration:
@@ -200,7 +204,7 @@ jobs:
       - name: 4. Curl Test (Container)
         run: | 
           sleep 5s
-          max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-on-gpu-test-${{ github.sha }}.txt; done
+          max=10;for (( i=1; i <= $max; ++i ));do curl localhost:8080/text >> curl-test-on-gpu-${{ github.sha }}.txt; echo >> curl-test-on-gpu-${{ github.sha }}.txt; done
       # 5. Upload Curl Test Result to Blob 
       - name: 5. Upload Test Result to Blob (AzureCLI)
         uses: azure/cli@v2
@@ -211,12 +215,13 @@ jobs:
               --account-name ${{ env.STORAGE_NAME }}  \
               --container-name ${{ env.STORAGE_CONTAINER_NAME }} \
               --name curl-on-gpu-test-${{ github.sha }}.txt \
-              --file ${{ github.workspace }}/curl-on-gpu-test-${{ github.sha }}.txt \
+              --file ${{ github.workspace }}/curl-test-on-gpu-${{ github.sha }}.txt \
               --auth-mode login \
               --overwrite
-      # 6. Stop and Remove Container
-      - name: 6. Delete Container
+      # 6. Stop and Remove Container, Image
+      - name: 6. Remove Container, Image
         if: always()
         run: |
           docker stop ${{ env.CONTAINER_NAME }}
           docker rm ${{ env.CONTAINER_NAME }}
+          docker image rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
